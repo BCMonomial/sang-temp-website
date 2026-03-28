@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LILAC桑 - 临时活动页</title>
+    <!-- 引入 PapaParse 用于解析复杂的 CSV 文件 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <style>
+        /* 参考提供的图片提取的渐变背景色 */
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+            background: linear-gradient(180deg, #c8e698 0%, #44744b 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        /* 顶部紧急通知横幅 */
+        .emergency-banner {
+            text-align: center;
+            padding: 40px 20px;
+            color: white;
+            font-size: 28px;
+            font-weight: 300;
+            letter-spacing: 2px;
+            text-shadow: 1px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 20px;
+        }
+
+        /* 卡片样式 */
+        .card {
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 20px rgba(0,0,0,0.15);
+        }
+
+        .card-header {
+            border-bottom: 2px solid #669e6e;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+
+        .title {
+            font-size: 22px;
+            font-weight: bold;
+            color: #2c4f31;
+            margin: 0 0 5px 0;
+        }
+
+        .tags {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            font-size: 13px;
+        }
+
+        .tag {
+            background-color: #e2f0d9;
+            color: #44744b;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+
+        .tag-city { background-color: #d9e2f0; color: #3b5070; }
+        .tag-time { background-color: #f0e6d9; color: #705b3b; }
+
+        .content {
+            flex-grow: 1;
+        }
+
+        .node-title {
+            font-weight: bold;
+            color: #44744b;
+            margin-bottom: 5px;
+            font-size: 15px;
+        }
+
+        .node-text {
+            font-size: 14px;
+            line-height: 1.6;
+            white-space: pre-wrap; /* 保留换行符 */
+            color: #555;
+            background: #f7f9f6;
+            padding: 10px;
+            border-radius: 6px;
+            border-left: 4px solid #8fc096;
+        }
+
+        .card-img {
+            width: 100%;
+            height: 180px;
+            object-fit: cover;
+            border-radius: 8px;
+            margin-top: 15px;
+            border: 1px solid #ddd;
+        }
+
+        .notes {
+            margin-top: 15px;
+            font-size: 13px;
+            color: #d9534f;
+            background: #fdf2f2;
+            padding: 8px;
+            border-radius: 4px;
+        }
+
+        .loading {
+            text-align: center;
+            color: white;
+            font-size: 18px;
+            grid-column: 1 / -1;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="emergency-banner">
+        本站是对目前“LILAC 桑”企划中已有部分的临时紧急呈现。本站不具备任何交互功能。
+    </div>
+
+    <div class="container">
+        <div class="grid" id="card-container">
+            <div class="loading">正在加载活动数据...</div>
+        </div>
+    </div>
+
+    <script>
+        // 页面加载完成后立即去拉取并解析 data.csv
+        document.addEventListener('DOMContentLoaded', () => {
+            Papa.parse("data.csv", {
+                download: true,       // 告诉库去下载这个文件
+                header: true,         // 将第一行作为 JSON 的 Key
+                skipEmptyLines: true, // 忽略空行
+                complete: function(results) {
+                    renderCards(results.data);
+                },
+                error: function(err) {
+                    console.error("CSV解析失败:", err);
+                    document.getElementById('card-container').innerHTML = '<div class="loading">数据加载失败，请检查 data.csv 文件是否存在或格式是否正确。</div>';
+                }
+            });
+        });
+
+        // 渲染卡片的函数
+        function renderCards(data) {
+            const container = document.getElementById('card-container');
+            container.innerHTML = ''; // 清空 loading 提示
+
+            data.forEach(item => {
+                // 如果整行都是空的（应对某些特殊的空行），跳过
+                if (!item['题目名']) return;
+
+                const card = document.createElement('div');
+                card.className = 'card';
+                
+                // 处理图片和注意事项（如果没有值则为空字符串）
+                let imageHtml = item['图片'] && item['图片'].trim() !== '' 
+                    ? `<img src="img/${item['图片'].trim()}" alt="${item['题目名']}" class="card-img" onerror="this.style.display='none'">` 
+                    : '';
+                
+                let notesHtml = item['注意事项'] && item['注意事项'].trim() !== '' 
+                    ? `<div class="notes">⚠️ ${item['注意事项']}</div>` 
+                    : '';
+
+                card.innerHTML = `
+                    <div class="card-header">
+                        <h2 class="title">${item['题目名']}</h2>
+                        <div class="tags">
+                            <span class="tag tag-city">📍 ${item['所在城市']}</span>
+                            <span class="tag tag-time">⏳ ${item['预计游玩时间']}</span>
+                            <span class="tag">🧩 ${item['主要玩法']}</span>
+                        </div>
+                    </div>
+                    <div class="content">
+                        <div class="node-title">第一个节点 / First Node</div>
+                        <div class="node-text">${item['第一个节点']}</div>
+                        ${imageHtml}
+                        ${notesHtml}
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+    </script>
+</body>
+</html>
